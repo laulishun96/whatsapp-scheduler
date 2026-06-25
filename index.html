@@ -904,6 +904,9 @@ let tags = JSON.parse(localStorage.getItem('wa_tags') || '[]');
 let segTemplates = JSON.parse(localStorage.getItem('wa_seg_templates') || '{}');
 let customerFilter = 'all';
 let newCustomerTags = [];
+// Cache paraphrased messages so we don't regenerate on re-render.
+// Declared here (before renderAll runs) to avoid a temporal-dead-zone error on load.
+let paraphraseCache = {};
 let allTimeStats = JSON.parse(localStorage.getItem('wa_alltime') || '{"sent":0,"replied":0}');
 let lastDeleted = null; // for undo
 
@@ -1254,8 +1257,7 @@ function buildMessage(customer) {
   return msg;
 }
 
-// Cache paraphrased messages so we don't regenerate on re-render
-const paraphraseCache = {};
+// paraphraseCache is declared near the top (state section) to avoid a load-time error.
 
 async function getParaphrasedMessage(customer) {
   const cacheKey = String(customer.id);
@@ -2659,12 +2661,4 @@ if ('serviceWorker' in navigator) {
           // Silent — offline support just won't be available
         });
       }
-      // If sw.js is missing (e.g. preview mode), do nothing — app works fine without it
-    }).catch(function() {
-      // Network/HEAD check failed — skip registration silently
-    });
-  });
-}
-</script>
-</body>
-</html>
+      // If sw.js is missing (e.g. preview mode), do
