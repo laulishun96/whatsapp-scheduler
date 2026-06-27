@@ -585,6 +585,36 @@
     .timer-display { font-size: 36px; }
   }
 </style>
+<style id="stitch-light-theme">
+  /* ===== Light "Stitch" re-skin: CSS variables + cosmetics only.
+     No HTML structure or JavaScript was changed. ===== */
+  :root{
+    --bg:#eef3f1;
+    --surface:#ffffff;
+    --surface2:#f2f6f4;
+    --border:#e2e8e4;
+    --green:#25d366;
+    --green-dim:#1aa251;
+    --green-glow:rgba(37,211,102,0.20);
+    --text:#0c1f16;
+    --muted:#65806f;
+    --accent:#0b7d43;
+    --danger:#e23b34;
+    --warn:#b07400;
+  }
+  /* softer page tint for a white background */
+  body::before{
+    background:
+      radial-gradient(ellipse 60% 40% at 80% 8%, rgba(37,211,102,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 60% at 8% 85%, rgba(37,211,102,0.05) 0%, transparent 60%);
+  }
+  /* Stitch-style soft card shadows */
+  .card{ box-shadow:0 1px 2px rgba(16,24,20,0.05), 0 6px 18px rgba(16,24,20,0.06); }
+  .tabs{ box-shadow:0 1px 3px rgba(16,24,20,0.06); }
+  .logo{ box-shadow:0 6px 16px rgba(37,211,102,0.28); }
+  /* keep dark toast popups (z-index:9999) readable on light theme */
+  body > div[style*="9999"]{ color:#ffffff !important; }
+</style>
 </head>
 <body>
 <div class="app">
