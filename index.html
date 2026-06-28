@@ -1856,7 +1856,7 @@ function renderFollowupCard(c, isDue) {
 
   const msg = buildFollowupMessage(c, step);
   const encodedMsg = encodeURIComponent(msg);
-  const waLink = 'whatsapp://send?phone=' + normalisePhone(c.phone) + '&text=' + encodedMsg;
+  const waLink = 'https://wa.me/' + normalisePhone(c.phone) + '?text=' + encodedMsg;
 
   const dueLabel = dueTs ? (isDue ? 'Due now' : 'Due ' + daysFromNow(dueTs)) : 'Scheduled';
 
@@ -2269,7 +2269,7 @@ async function renderQueue() {
     const isCurrent = qi === 0;
     const msg = messages[qi];
     const encodedMsg = encodeURIComponent(msg);
-    const waLink = 'whatsapp://send?phone=' + normalisePhone(c.phone) + '&text=' + encodedMsg;
+    const waLink = 'https://wa.me/' + normalisePhone(c.phone) + '?text=' + encodedMsg;
     const idStr = String(c.id).replace('.', '_');
 
     return `
@@ -2322,7 +2322,7 @@ async function regenerateFollowup(id, step) {
 
   // Update UI
   if (msgEl) msgEl.textContent = newMsg;
-  const newLink = 'whatsapp://send?phone=' + normalisePhone(c.phone) + '&text=' + encodeURIComponent(newMsg);
+  const newLink = 'https://wa.me/' + normalisePhone(c.phone) + '?text=' + encodeURIComponent(newMsg);
   if (waLinkEl) waLinkEl.href = newLink;
 
   showToast('✨ Follow-up rephrased!');
@@ -2347,7 +2347,7 @@ async function regenerateMessage(id) {
 
   // Update UI
   if (msgEl) msgEl.textContent = newMsg;
-  if (waLinkEl) waLinkEl.href = 'whatsapp://send?phone=' + normalisePhone(c.phone) + '&text=' + encodeURIComponent(newMsg);
+  if (waLinkEl) waLinkEl.href = 'https://wa.me/' + normalisePhone(c.phone) + '?text=' + encodeURIComponent(newMsg);
 
   showToast('✨ Message rephrased!');
 }
@@ -2640,7 +2640,7 @@ function renderInsights() {
     } else {
       noReplyEl.innerHTML = waiting.map(c => {
         const msg = encodeURIComponent(buildMessage(c));
-        const wa = 'whatsapp://send?phone=' + normalisePhone(c.phone) + '&text=' + msg;
+        const wa = 'https://wa.me/' + normalisePhone(c.phone) + '?text=' + msg;
         return '<div class="customer-item"><div class="customer-avatar" style="' + getTagAvatarStyle(c) + '">' + c.name[0].toUpperCase() + '</div>' +
           '<div class="customer-info"><div class="customer-name">' + c.name + '</div>' +
           '<div class="customer-phone">sent ' + timeAgo(c.sentAt) + '</div></div>' +
