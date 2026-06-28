@@ -1414,17 +1414,21 @@ async function paraphraseWithAI(customer) {
 }
 
 function localParaphrase(base, name) {
-  // Meaning-preserving rephrase: the greeting varies and a few pleasantries /
-  // connecting phrases are swapped for TRUE synonyms only. Your core message keeps
-  // the same meaning and all key details, and line breaks are preserved.
-  const pick = function(a){ return a[Math.floor(Math.random() * a.length)]; };
+  // Free, meaning-preserving rephrase. Varies the greeting and a LARGE set of common
+  // conversational/business phrases using TRUE synonyms only, and always tries to pick
+  // wording different from what is there so each click changes the message.
+  // Specific facts, numbers, prices and line breaks are kept EXACTLY as written.
   const escName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pickDiff = function(opts, current){
+    const cur = (current||'').trim().toLowerCase();
+    const diff = opts.filter(function(o){ return o.trim().toLowerCase() !== cur; });
+    const pool = diff.length ? diff : opts;
+    return pool[Math.floor(Math.random()*pool.length)];
+  };
 
-  // 1) Separate any existing greeting + name from the body
-  let rest = base;
-  let hadGreeting = false;
-  let sep = ', ';
-  const gw = rest.match(/^[ \t]*(hi there|good day|hi|hey|hello|dear)\b[ \t]*/i);
+  // 1) Separate any leading greeting + name from the body
+  let rest = base, hadGreeting = false, sep = ', ';
+  const gw = rest.match(/^[ \t]*(hi there|good day|good morning|good afternoon|good evening|hi|hey|hello|dear)\b[ \t]*/i);
   if (gw) { hadGreeting = true; rest = rest.slice(gw[0].length); }
   const nm = rest.match(new RegExp('^[ \\t]*' + escName + '[ \\t]*', 'i'));
   if (nm) { hadGreeting = true; rest = rest.slice(nm[0].length); }
@@ -1432,29 +1436,51 @@ function localParaphrase(base, name) {
   if (sp) { sep = sp[1].trim() + ' '; rest = rest.slice(sp[0].length); }
   let body = rest;
 
-  // 2) Synonym swaps — every option means the same thing (no meaning change)
+  // 2) Meaning-safe synonym swaps (every option means the same thing)
   const swaps = [
-    [/\bhope you are doing well\b/gi, ['hope you are doing well', 'hope you are keeping well', 'hope all is well with you', 'hope this finds you well']],
-    [/\bhope you are well\b/gi, ['hope you are well', 'hope you are doing well', 'hope all is well']],
-    [/\bI wanted to\b/gi, ['I wanted to', "I'd like to", 'I just wanted to']],
-    [/\bI would like to\b/gi, ['I would like to', 'I wanted to', "I'd like to"]],
-    [/\breach out to you\b/gi, ['reach out to you', 'get in touch with you', 'connect with you']],
-    [/\breach out\b/gi, ['reach out', 'get in touch']],
-    [/\bget in touch\b/gi, ['get in touch', 'connect', 'reach out']],
-    [/\bpersonally\b/gi, ['personally', 'directly']],
-    [/\bjust checking in\b/gi, ['just checking in', 'just touching base', 'checking in with you']],
-    [/\blet me know\b/gi, ['let me know', 'do let me know', 'feel free to let me know']],
-    [/\bplease\b/gi, ['please', 'kindly']],
-    [/\bthank you\b/gi, ['thank you', 'thanks so much', 'many thanks']],
-    [/\bthanks\b/gi, ['thanks', 'thank you', 'many thanks']]
+    [/\bhope you('?re| are) doing well\b/gi, ['hope you are doing well','hope you are keeping well','hope you are doing great','hope all is well with you','hope this finds you well']],
+    [/\bhope (you('?re| are) well|all'?s? (is )?well|everything('?s| is) (good|well)|things are going well)\b/gi, ["hope you're well",'hope all is well','hope everything is going well','hope things are good with you']],
+    [/\bI wanted to\b/gi, ['I wanted to',"I'd like to",'I just wanted to','I am reaching out to']],
+    [/\bI('?d| would) like to\b/gi, ["I'd like to",'I want to','I would love to']],
+    [/\breach out to you\b/gi, ['reach out to you','get in touch with you','connect with you','drop you a quick message']],
+    [/\breach out\b/gi, ['reach out','get in touch','connect']],
+    [/\bget in touch\b/gi, ['get in touch','connect','reach out']],
+    [/\bthought (it|this) (could|might|may) be (useful|helpful|of use|of interest) (for|to) you\b/gi, ['thought it might be helpful for you','figured it could be useful for you','reckoned this might be of interest to you','thought it could be handy for you']],
+    [/\bcame across\b/gi, ['came across','found','spotted','noticed']],
+    [/\bfree for a (quick )?chat\b/gi, ['free for a quick chat','available for a quick chat','open to a quick chat','free for a short call']],
+    [/\bquick chat\b/gi, ['quick chat','short chat','quick call','brief chat']],
+    [/\bno obligation( at all)?\b/gi, ['no obligation at all','no commitment at all','no pressure at all','zero obligation']],
+    [/\bget back to me\b/gi, ['get back to me','reply to me','let me know']],
+    [/\blet me know\b/gi, ['let me know','do let me know','just let me know','drop me a message']],
+    [/\bfeel free to\b/gi, ['feel free to','please feel free to',"you're welcome to"]],
+    [/\binterested\b/gi, ['interested','keen']],
+    [/\bas soon as possible\b/gi, ['as soon as possible','when you can','at your convenience']],
+    [/\bthis week\b/gi, ['this week','sometime this week']],
+    [/\bhave a look\b/gi, ['have a look','take a look','check it out']],
+    [/\bcheck it out\b/gi, ['check it out','take a look','have a look']],
+    [/\bstraightforward\b/gi, ['straightforward','simple','hassle-free']],
+    [/\buseful\b/gi, ['useful','helpful','handy']],
+    [/\bpersonally\b/gi, ['personally','directly']],
+    [/\bplease\b/gi, ['please','kindly']],
+    [/\bthank you\b/gi, ['thank you','thanks so much','many thanks']]
   ];
-  swaps.forEach(function(pair){ body = body.replace(pair[0], function(){ return pick(pair[1]); }); });
+  swaps.forEach(function(pair){
+    body = body.replace(pair[0], function(m){ return pickDiff(pair[1], m); });
+  });
+
+  // 2b) Fix sentence casing that lowercase synonyms may have introduced
+  //     (capitalise first letter of each line and after . ! ?). Numbers/facts untouched.
+  body = body.split('\n').map(function(line){
+    line = line.replace(/^([^\p{L}\n]*)(\p{Ll})/u, function(_, pre, ch){ return pre + ch.toUpperCase(); });
+    line = line.replace(/([.!?]["')\]]?\s+)(\p{Ll})/gu, function(_, pre, ch){ return pre + ch.toUpperCase(); });
+    return line;
+  }).join('\n');
 
   // 3) Rebuild with a fresh greeting (name appears exactly once)
   const greetings = ['Hi ' + name, 'Hello ' + name, 'Hey ' + name, 'Hi there ' + name, 'Good day ' + name];
-  const g = pick(greetings);
-  if (!hadGreeting) return g + ', ' + body;                // template had no greeting
-  if (body.startsWith('\n')) return g + sep.trim() + body; // multi-line message
+  const g = pickDiff(greetings, gw ? (gw[0].trim() + ' ' + name) : '');
+  if (!hadGreeting) return g + ', ' + body;
+  if (body.startsWith('\n')) return g + sep.trim() + body;
   return g + sep + body;
 }
 
