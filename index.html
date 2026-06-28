@@ -1424,10 +1424,12 @@ function localParaphrase(base, name) {
     ' Take care!', ' 🙏', ' Have a great day!'
   ];
 
-  // Remove any existing greeting that starts with Hi/Hey/Hello + name
-  let body = base.replace(/^(hi|hey|hello|dear)\s+\w+[,!.]?\s*/i, '').trim();
-  // Also remove leading name if present
-  body = body.replace(new RegExp('^' + name + '[,!.]?\s*', 'i'), '').trim();
+  // Escape regex-special characters in the name (handles brackets, dots, etc.)
+  const escName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Remove only a leading greeting word (Hi/Hey/Hello/Dear) + following separators
+  let body = base.replace(/^\s*(hi|hey|hello|dear)\b[\s,!.]*/i, '').trim();
+  // Remove the customer's FULL name if it now sits at the start (any length), + trailing punctuation
+  body = body.replace(new RegExp('^' + escName + '[\\s,!.]*', 'i'), '').trim();
 
   // Capitalise first letter of body
   if (body.length > 0) body = body.charAt(0).toUpperCase() + body.slice(1);
