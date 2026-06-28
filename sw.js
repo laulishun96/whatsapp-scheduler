@@ -1,4 +1,4 @@
-const CACHE = 'wa-scheduler-v8';
+const CACHE = 'wa-scheduler-v9';
 const ASSETS = [
   './',
   './index.html',
