@@ -1414,48 +1414,69 @@ async function paraphraseWithAI(customer) {
 }
 
 function localParaphrase(base, name) {
-  // Strip the message into sentences and rebuild with variation
-  const greetings = [
-    `Hey ${name}! `, `Hi ${name} 😊 `, `Hello ${name}! `,
-    `${name}! `, `Hey there ${name} 👋 `, `Hi ${name}, hope you are well! `
-  ];
-  const closings = [
-    '', ' 😊', ' Let me know!', ' Hope to hear from you soon!',
-    ' Take care!', ' 🙏', ' Have a great day!'
-  ];
-
-  // Escape regex-special characters in the name (handles brackets, dots, etc.)
+  // Free local paraphraser — strong variation, no API needed.
   const escName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // Remove only a leading greeting word (Hi/Hey/Hello/Dear) + following separators
-  let body = base.replace(/^\s*(hi|hey|hello|dear)\b[\s,!.]*/i, '').trim();
-  // Remove the customer's FULL name if it now sits at the start (any length), + trailing punctuation
+
+  // Remove a leading greeting word + the full customer name from the start
+  let body = base.replace(/^\s*(hi there|good day|hi|hey|hello|dear)\b[\s,!.]*/i, '').trim();
   body = body.replace(new RegExp('^' + escName + '[\\s,!.]*', 'i'), '').trim();
 
-  // Capitalise first letter of body
-  if (body.length > 0) body = body.charAt(0).toUpperCase() + body.slice(1);
-
-  const greeting = greetings[Math.floor(Math.random() * greetings.length)];
-  const closing = closings[Math.floor(Math.random() * closings.length)];
-
-  // Word-level variations
+  // Phrase swaps (multi-word first). Each picks an option different from the original where possible.
   const swaps = [
-    [/wanted to/gi, ['would like to', 'just want to', 'am reaching out to']],
-    [/personally/gi, ['', 'specially', 'directly']],
-    [/reach out/gi, ['get in touch', 'connect', 'drop you a message']],
-    [/hope you are doing well/gi, ["hope you are doing great", 'hope all is well', "hope you are having a good day"]],
-    [/today/gi, ['right now', 'at the moment', 'today']],
-    [/promotion/gi, ['promo', 'special deal', 'offer']],
-    [/please/gi, ['kindly', 'do']],
-    [/let me know/gi, ['feel free to reach out', 'drop me a message', 'give me a shout']],
-    [/thank you/gi, ['thanks so much', 'many thanks', 'thank you so much']],
+    [/hope you are doing well/gi, ['hope you are doing great','hope all is well with you','hope things are going well for you','hope you are having a good day','hope you are keeping well','trust you are doing well']],
+    [/hope you are well/gi, ['hope you are doing great','hope all is well','hope you are keeping well','hope things are good with you']],
+    [/i wanted to/gi, ['I would like to','I just wanted to','I am reaching out to','I thought I would','I figured I would','I am getting in touch to']],
+    [/personally\s*/gi, ['','','specially ','directly ','just ']],
+    [/reach out to you/gi, ['get in touch with you','connect with you','drop you a quick message','touch base with you','say hello']],
+    [/reach out/gi, ['get in touch','connect','drop you a line','touch base']],
+    [/get back to me/gi, ['reply when you can','drop me a reply','let me know']],
+    [/let me know/gi, ['feel free to reply','drop me a message','give me a shout','do let me know','just reply here']],
+    [/today/gi, ['right now','at the moment','this time','','just now']],
+    [/promotion/gi, ['promo','special deal','offer']],
+    [/please/gi, ['kindly','do','if you could']],
+    [/thank you/gi, ['thanks so much','many thanks','really appreciate it','thanks a lot']],
   ];
-
-  let varied = body;
-  swaps.forEach(([pattern, replacements]) => {
-    varied = varied.replace(pattern, () => replacements[Math.floor(Math.random() * replacements.length)]);
+  swaps.forEach(function(pair){
+    var pat = pair[0], opts = pair[1];
+    body = body.replace(pat, function(m){
+      var diff = opts.filter(function(o){ return o.trim().toLowerCase() !== m.trim().toLowerCase(); });
+      var pool = diff.length ? diff : opts;
+      return pool[Math.floor(Math.random()*pool.length)];
+    });
   });
 
-  return (greeting + varied + closing).trim();
+  // Optionally shuffle independent sentences (no lookbehind, wide browser support)
+  var parts = body.match(/[^.!?]+[.!?]*/g) || [body];
+  parts = parts.map(function(x){ return x.trim(); }).filter(function(x){ return x.length; });
+  if (parts.length > 1 && Math.random() < 0.5) {
+    for (var i = parts.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random()*(i+1));
+      var tmp = parts[i]; parts[i] = parts[j]; parts[j] = tmp;
+    }
+  }
+  body = parts.join(' ');
+
+  // Clean up: remove spaces before punctuation, collapse spaces, capitalise each sentence
+  body = body.replace(/\s+([.!,?;:])/g, '$1').replace(/\s{2,}/g, ' ').trim();
+  body = body.replace(/(^|[.!?]\s+)([a-z])/g, function(_, pre, ch){ return pre + ch.toUpperCase(); });
+
+  // Varied greeting (name appears once) + separator + closing
+  var greetings = [
+    'Hi ' + name, 'Hey ' + name, 'Hello ' + name, 'Hi there ' + name,
+    'Hey there ' + name, 'Good day ' + name, name, 'Hi ' + name + ' \u{1F60A}',
+    'Hey ' + name + ' \u{1F44B}', 'Hello there ' + name
+  ];
+  var seps = ['! ', ', ', '! ', ', ', ' — '];
+  var closings = [
+    '', '', ' \u{1F60A}', ' Let me know!', ' Hope to hear from you soon!',
+    ' Take care!', ' \u{1F64F}', ' Have a great day!', ' Cheers!',
+    ' Looking forward to hearing from you!', ' Talk soon!'
+  ];
+  var g = greetings[Math.floor(Math.random()*greetings.length)];
+  var sep = seps[Math.floor(Math.random()*seps.length)];
+  var c = closings[Math.floor(Math.random()*closings.length)];
+
+  return (g + sep + body + c).replace(/\s+([.!,?;:])/g, '$1').replace(/\s{2,}/g, ' ').trim();
 }
 
 
